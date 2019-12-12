@@ -1,0 +1,73 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+
+#raw_dataset <- read.csv("../data/last_releases.csv")
+raw_dataset <- read_delim("../data/raw_last_releases.csv", 
+    ",", escape_double = FALSE, trim_ws = TRUE)
+
+```
+
+```{r}
+data_set <- raw_dataset
+colnames(data_set) <- c("GroupID", "Artifact","Version","License","Repo","ReleaseDate","Dependencies","Users")
+```
+
+```{r}
+data_set %>% filter(GroupID == "org.debux.webmotion")
+```
+
+```{r}
+cleanURL <- function (rawUrl) {
+  if(is.na(rawUrl)) {
+    return(NA)
+  }
+  if(grepl("{", rawUrl, fixed = TRUE)) {
+    return(NA)
+  }
+  if(grepl("$", rawUrl, fixed = TRUE)) {
+    return(NA)
+  }
+  if(grepl("+", rawUrl, fixed = TRUE)) {
+    return(NA)
+  }
+  if(grepl("\"", rawUrl, fixed = TRUE)) {
+    return(NA)
+  }
+  if(grepl("|", rawUrl, fixed = TRUE)) {
+    return(NA)
+  }
+  if(grepl("(", rawUrl, fixed = TRUE)) {
+    return(NA)
+  }
+  if(!grepl("github\\.com[/,:]*.*/.*", rawUrl, fixed = FALSE)) {
+    return(NA)
+  }
+  tmp <- sub(".*github\\.com[/,:]*", "/", rawUrl)
+  tmp <- sub(sub("/[^/]*/[^/]*", "\\1", tmp), "", tmp)
+  tmp <- sub(".git$", "", tmp)
+  tmp <- paste("https://github.com", tmp, ".git", sep = "")
+  if(str_length(tmp) < 26) {
+    return(NA)
+  }
+  return(tmp)
+}
+```
+
+```{r}
+dataset_set <- data_set %>% mutate(RepoURL = NA)
+dataset_set$RepoURL <- sapply(data_set$Repo, cleanURL)
+```
+
+```{r}
+write.csv(dataset_set, file = "../data/last_releases.csv", row.names = F)
+```

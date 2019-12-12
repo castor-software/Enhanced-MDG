@@ -1,0 +1,62 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+projects <- read_delim("../data/projects.csv", 
+    ",", escape_double = FALSE, trim_ws = TRUE)
+colnames(projects) <- c("G", "A", "RepoUrl", "Dataset", "Cloned", "LastCommitDate", "Commits", "Branches", "Tags", "Committers", "CommitID", "RootPOM", "Compile", "Test1", "Tests", "Test2")
+```
+
+
+```{r}
+
+sucesses <- projects %>% filter(Cloned == "true") %>% select(RootPOM, Compile, Test1, Tests, Test2) %>%
+  mutate(Category = ifelse(RootPOM == "false", "No Root POM", 
+                    ifelse(Compile == "false", "Does Not Compile",
+                    ifelse(Test1 == "false", "Fails Tests",
+                    ifelse(Tests == 0, "No Tests (Reproductible Build)",
+                    ifelse(Test2 == "false", "Flacky Tests", "Reproductible Build"))))))
+
+sucesses$Category <- as.factor(sucesses$Category)
+
+summary(sucesses$Category)
+```
+
+```{r}
+#sucesses %>% ggplot(aes(x = "", fill = Category)) + 
+#  geom_bar(width = 1, stat = "count") + coord_polar("y", start=0)
+
+ns <- sucesses %>% select(Category) %>% group_by(Category) %>% summarise(n = n()) %>% mutate(cumul = 0)
+total <- sum(ns$n)
+ns <- ns %>% mutate(eff = 100 * n / total)
+cumul <- 0
+
+for(i in nrow(ns):1) {
+  q <- ns[i,]$n
+  ns[i,]$cumul <- 100 * ((cumul + (q/2))/ total)
+  cumul <- cumul + q
+}
+ns$eff <- round(ns$eff, digits = 1)
+
+build_outcomes <- ns %>% ggplot(aes(x = "", y = eff, fill = Category)) + 
+  geom_bar(width = 1, stat = "identity") + geom_text(aes(y = cumul, label = paste(eff, "%"))) + theme_void() + 
+  coord_polar("y", start=0)
+build_outcomes
+
+ggsave(filename = "build_outcomes.png", device="png", height = 4, width = 6,  units = c("in"))
+```
+
+```{r}
+projects %>% filter(Cloned == "true") %>% select(Commits, Branches, Tags, Committers) %>% summary()
+
+clonedProjects <- projects %>% filter(Cloned == "true")
+sum(clonedProjects$Commits)
+sum(clonedProjects$Tags)
+
+```

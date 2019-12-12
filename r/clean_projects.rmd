@@ -1,0 +1,50 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+
+#raw_dataset <- read.csv("../data/last_releases.csv")
+gav_raw <- read_delim("../data/last_releases.csv", 
+    ",", escape_double = FALSE, trim_ws = TRUE)
+projects_raw <- read_delim("../data/projects.csv", 
+    ",", escape_double = FALSE, trim_ws = TRUE, col_names = FALSE)
+colnames(projects_raw) <- c("G", "A", "RepoUrl", "Dataset", "Cloned", "LastCommitDate", "Commits", "Branches", "Tags", "Committers", "CommitID", "RootPOM", "Compile", "Test1", "Tests", "Test2")
+```
+
+```{r}
+gav_url <- gav_raw %>% select(GroupID, Artifact, Version, RepoURL, Dependencies, Users) %>% filter(!is.na(RepoURL)) %>% filter(str_length(RepoURL) > 26)
+processed <- projects_raw %>% select(RepoUrl, Cloned)
+
+```
+
+```{r}
+unmatched_url <- merge(gav_url, processed, all.x = TRUE, all.y = FALSE, by.x = "RepoURL", by.y = "RepoUrl")
+
+unmatched_url <- unmatched_url %>% filter(is.na(Cloned)) %>% select(RepoURL)
+```
+
+```{r}
+write.csv(unmatched_url, file = "../data/unmatch_url.csv", row.names = F)
+
+```
+
+```{r}
+matched_url <- merge(gav_url, projects_raw, all.x = FALSE, all.y = FALSE, by.x = "RepoURL", by.y = "RepoUrl")
+```
+
+```{r}
+write.csv(matched_url, file = "../data/clean_projects.csv", row.names = F)
+```
+
+
+
+
+
+
+

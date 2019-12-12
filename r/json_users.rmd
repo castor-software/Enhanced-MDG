@@ -1,0 +1,47 @@
+---
+title: "JSON user dataset"
+output: html_notebook
+---
+
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+projects <- read_delim("../data/clean_projects.csv", 
+    ",", escape_double = FALSE, trim_ws = TRUE)
+
+json_users_raw <-read_delim("../data/json_users.csv", 
+    ",", escape_double = FALSE, trim_ws = TRUE)
+
+
+languages <-read_delim("../data/languages.csv", 
+    ",", escape_double = FALSE, trim_ws = TRUE, col_names = FALSE)
+
+colnames(languages) <- c("G" ,"A", "Files", "Lang", "BlankLines", "Comments", "CodeLines")
+```
+```{r}
+json_users <- merge(projects, json_users_raw, by.x = c("GroupID", "Artifact"), by.y = c("g","a"), all.y = FALSE, all.x = FALSE)
+
+lang <- languages %>% select(G,A,Files,CodeLines) %>% group_by(G,A) %>% summarise(f=sum(Files), cloc=sum(CodeLines))
+
+json_users_2 <- merge(json_users, lang, by.x = c("G", "A"), by.y = c("G","A"), all.y = FALSE, all.x = FALSE)
+
+```
+
+```{r}
+
+json_users_3 <- json_users_2 %>% filter(Test1 == "true")
+
+
+lib_json <- json_users_3 %>% select(GroupID,Artifact,Version,jsonA) %>% group_by(jsonA) %>% summarize(n=n())
+json_users_3 %>% select(Commits,Tests,f,cloc) %>% summary()
+
+```
+
+```{r}
+
+write.csv(json_users_3, file = "../data/clean_json.csv")
+
+```

@@ -32,13 +32,23 @@ major_lang <- c("Markdown","Java","Maven","YAML","XML","JSON","JavaScript","HTML
 nb_p <- languages %>% select(G,A) %>% distinct() %>% count()
 cleannbp <- nb_p$n[1]
 
-langDistrib <- languages %>% select(Lang) %>% filter(Lang %in% major_lang) %>% ggplot(aes(x = Lang, y = 100*(..count..)/cleannbp, fill = Lang)) + 
-  geom_bar(width = 1, stat = "count", show.legend = FALSE) +
+langDistrib <- languages %>%
+  select(Lang) %>% 
+  filter(Lang %in% major_lang) %>% 
+  group_by(Lang) %>%
+  count() %>% 
+  ungroup() %>% 
+  mutate(perc = 100 * n / cleannbp) %>% 
+  mutate(type = ifelse(Lang == "Java" | Lang == "Groovy" | Lang == "Scala" | Lang == "Kotlin", "JVM", "Non JVM")) %>% 
+  ggplot(aes(x = reorder(Lang, perc), y = perc, fill = type)) + 
+  geom_bar(width = 0.75, stat = "identity") +
   labs(x = "Language", y = "% Projects") + 
-  coord_flip()
+  coord_flip() +
+  theme(legend.title=element_blank())
+
 langDistrib
 
-ggsave(filename = "langDistrib.png", device="png", height = 4, width = 6,  units = c("in"))
+ggsave(filename = "langDistrib.png", device="png", height = 6, width = 8,  units = c("in"))
 ```
 
 ```{r}
